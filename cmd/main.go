@@ -10,9 +10,12 @@ func main()  {
 	db.CreateResource("status", "status_url")
 	db.CreateResource("status2", "status2_url")
 	db.CreateTeam("sponsorship")
+	db.CreateTeam("program")
 	db.RegisterResource("status", "sponsorship")
 	db.RegisterResource("status2", "sponsorship")
+	db.RegisterResource("status2", "program")
 	db.QueryResources("sponsorship")
+	db.QueryResources("program")
 	db.DisconnectDatabase()
 	return
 }

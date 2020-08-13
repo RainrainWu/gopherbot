@@ -3,6 +3,9 @@ package db
 import (
 
 	"log"
+	"fmt"
+	"strings"
+	"strconv"
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
@@ -118,11 +121,38 @@ func FindResource(name string) (Resource) {
 
 func QueryResources(team string) {
 
-	var teams []ResourceToTeam
+	var relations []ResourceToTeam
 	team_id := FindTeam(team).Id
 	team_sql := "SELECT * FROM resource_to_team WHERE team_id = $1"
-	database.Select(&teams, team_sql, team_id)
-	log.Print(teams)
+	database.Select(&relations, team_sql, team_id)
+
+	var resource_ids []string
+	for _, relation := range relations {
+		resource_ids = append(resource_ids, strconv.Itoa(relation.ResourceId))
+	}
+	set := strings.Join(resource_ids, ", ")
+
+	var resources []Resource
+	resource_sql := "SELECT * FROM resource WHERE id IN (%s)"
+	database.Select(&resources, fmt.Sprintf(resource_sql, set))
+	log.Println(resources)
+}
+
+func QueryResources2(team string) {
+
+	resources_sql := `
+	SELECT r.id, r.name, r.url
+	FROM   resource r
+	join resource_to_team r_t on r.id = r_t.resource_id
+	join team t on t.id = r_t.team_id
+    where t.name = $1
+	`
+	var resources []Resource
+	err := database.Select(&resources, resources_sql, team)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Print(resources)
 }
 
 func RegisterResource(resource string, team string) {
