@@ -3,6 +3,7 @@ package db
 import (
 
 	"log"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -67,21 +68,29 @@ var (
 
 	database *sqlx.DB
 	err interface{}
+	tags []string = []string{"chair", "sponsorship", "program"}
 )
 
 func init() {
 
 	ConnectDatabase()
+	for _, tag := range tags {
+		CreateTeam(tag)
+	}
 }
 
 func ConnectDatabase()  {
 
-	connStr := "host=" + config.UsingConfig.Host
-	connStr += " port=" + config.UsingConfig.Port
-	connStr += " user=" + config.UsingConfig.Username
-	connStr += " dbname=" + config.UsingConfig.DBname
-	connStr += " password=" + config.UsingConfig.Password
-	connStr += " sslmode=" + config.UsingConfig.SSLmode
+	connStr := "host=%s port=%s user=%s dbname=%s password=%s sslmode=%s"
+	connStr = fmt.Sprintf(
+		connStr,
+		config.Config.DBConfig.Host,
+		config.Config.DBConfig.Port,
+		config.Config.DBConfig.Username,
+		config.Config.DBConfig.DBname,
+		config.Config.DBConfig.Password,
+		config.Config.DBConfig.SSLmode,
+	)
 
 	database, err = sqlx.Connect("postgres", connStr)
 	if err != nil {
@@ -133,7 +142,7 @@ func ListResources() ([]Resource) {
 	return resources
 }
 
-func QueryResources(team string) {
+func QueryResources(team string) ([]Resource) {
 
 	resourcesSQL := `
 	SELECT r.id, r.name, r.url
@@ -147,7 +156,15 @@ func QueryResources(team string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Print(resources)
+	return resources
+}
+
+func DeleteResource(name string) {
+
+	deleteSQL := "DELETE FROM resource WHERE name=$1"
+	tx := database.MustBegin()
+	tx.MustExec(deleteSQL, name)
+	tx.Commit()
 }
 
 func CreateTeam(name string) {
@@ -185,6 +202,14 @@ func ListTeams() ([]Team) {
 		log.Fatal(err)
 	}
 	return teams
+}
+
+func DeleteTeam(name string) {
+
+	deleteSQL := "DELETE FROM team WHERE name=$1"
+	tx := database.MustBegin()
+	tx.MustExec(deleteSQL, name)
+	tx.Commit()
 }
 
 func RegisterResource(resource string, team string) {

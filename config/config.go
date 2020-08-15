@@ -7,6 +7,12 @@ import (
 	"encoding/json"
 )
 
+type UsingConfig struct {
+
+	DBConfig DatabaseConfig	`json:"dbconfig"`
+	TGConfig TelegramConfig	`json:"tgconfig"`
+}
+
 type DatabaseConfig struct {
 
 	Host string		`json:"host"`
@@ -17,9 +23,18 @@ type DatabaseConfig struct {
 	SSLmode string	`json:"sslmode"`
 }
 
+type TelegramConfig struct {
+
+	Token string	`json:token`
+}
+
 var (
 
-	UsingConfig = DatabaseConfig{}
+	Config = UsingConfig{
+
+		DBConfig: DatabaseConfig{},
+		TGConfig: TelegramConfig{},
+	}
 )
 
 func init()  {
@@ -30,7 +45,7 @@ func init()  {
 func LoadConfig() {
 
 	data, _ := ioutil.ReadFile("./.env")
-	err := json.Unmarshal(data, &UsingConfig)
+	err := json.Unmarshal(data, &Config)
 	if err != nil {
 		fmt.Println(err)
 	}
