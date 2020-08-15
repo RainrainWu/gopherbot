@@ -4,6 +4,7 @@ import (
 
 	"log"
 	"fmt"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -120,15 +121,19 @@ func CreateResource(name, url string) {
 	tx.Commit()
 }
 
-func GetResource(name string) (Resource) {
+func GetResource(name string) (*Resource, error) {
 
 	getSQL := "SELECT * FROM resource WHERE name=$1"
 	resource := Resource{}
 	err := database.Get(&resource, getSQL, name)
 	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			tpl := "resource %s not found"
+			return nil, errors.New(fmt.Sprintf(tpl, name))
+		}
 		log.Fatal(err)
 	}
-	return resource
+	return &resource, nil
 }
 
 func ListResources() ([]Resource) {
@@ -182,15 +187,19 @@ func CreateTeam(name string) {
 	tx.Commit()
 }
 
-func GetTeam(name string) (Team) {
+func GetTeam(name string) (*Team, error) {
 
 	getSQL := "SELECT * FROM team WHERE name=$1"
 	team := Team{}
 	err := database.Get(&team, getSQL, name)
 	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			tpl := "team %s not found"
+			return nil, errors.New(fmt.Sprintf(tpl, name))
+		}
 		log.Fatal(err)
 	}
-	return team
+	return &team, nil
 }
 
 func ListTeams() ([]Team) {
@@ -212,7 +221,7 @@ func DeleteTeam(name string) {
 	tx.Commit()
 }
 
-func RegisterResource(resource string, team string) {
+func RegisterResource(resource string, team string) (error) {
 
 	registerSQL := `
 	INSERT INTO resource_to_team (resource_id, team_id)
@@ -222,22 +231,58 @@ func RegisterResource(resource string, team string) {
 		WHERE resource_id = $1 AND team_id = $2
 	);
 	`
-	resourceId := GetResource(resource).Id
-	teamId := GetTeam(team).Id
+	resourceFound, err := GetResource(resource)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			tpl := "resource %s not found"
+			return errors.New(fmt.Sprintf(tpl, resource))
+		}
+		log.Fatal(err)
+	}
+	resourceId := resourceFound.Id
+	teamFound, err := GetTeam(team)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			tpl := "team %s not found"
+			return errors.New(fmt.Sprintf(tpl, team))
+		}
+		log.Fatal(err)
+	}
+	teamId := teamFound.Id
 	tx := database.MustBegin()
 	tx.MustExec(registerSQL, resourceId, teamId)
 	tx.Commit()
+
+	return nil
 }
 
-func DeregisterResource(resource string, team string) {
+func DeregisterResource(resource string, team string) (error) {
 
 	deregisterSQL := `
 	DELETE FROM resource_to_team
 	WHERE resource_id = $1 AND team_id = $2;
 	`
-	resourceId := GetResource(resource).Id
-	teamId := GetTeam(team).Id
+	resourceFound, err := GetResource(resource)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			tpl := "resource %s not found"
+			return errors.New(fmt.Sprintf(tpl, resource))
+		}
+		log.Fatal(err)
+	}
+	resourceId := resourceFound.Id
+	teamFound, err := GetTeam(team)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			tpl := "team %s not found"
+			return errors.New(fmt.Sprintf(tpl, team))
+		}
+		log.Fatal(err)
+	}
+	teamId := teamFound.Id
 	tx := database.MustBegin()
 	tx.MustExec(deregisterSQL, resourceId, teamId)
 	tx.Commit()
+
+	return nil
 }

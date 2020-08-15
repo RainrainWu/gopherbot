@@ -25,7 +25,7 @@ type Message struct {
 }
 
 type Chat struct {
-	
+
 	Id int `json:"id"`
 }
 
@@ -161,25 +161,66 @@ func resourceHandler(command []string) string {
 		return reply
 	
 	case "get":
-		return db.GetResource(command[0]).Url
+		if len(command) == 1 {
+			return "please specify the resource name"
+		} else if len(command) > 2 {
+			return "too many parameters"
+		}
+		resource, err := db.GetResource(command[1])
+		if err != nil {
+			return err.Error()
+		}
+		return resource.Url
 
 	case "new":
+		if len(command) == 1 {
+			return "please specify the resource name"
+		} else if len(command) == 2 {
+			return "please specify the resource url"
+		} else if len(command) > 3 {
+			return "too many parameters"
+		}
 		db.CreateResource(command[1], command[2])
 		tpl := "Create resource %s with url %s."
 		return fmt.Sprintf(tpl, command[1], command[2])
 
 	case "del":
+		if len(command) == 1 {
+			return "please specify the resource name"
+		} else if len(command) > 2 {
+			return "too many parameters"
+		}
 		db.DeleteResource(command[1])
 		tpl := "Delete resource %s."
 		return fmt.Sprintf(tpl, command[1])
 
 	case "tag":
-		db.RegisterResource(command[1], command[2])
+		if len(command) == 1 {
+			return "please specify the resource name"
+		} else if len(command) == 2 {
+			return "please specify the tag name"
+		} else if len(command) > 3 {
+			return "too many parameters"
+		}
+		err := db.RegisterResource(command[1], command[2])
+		if err != nil {
+			return err.Error()
+		}
 		tpl := "Tag resource %s with tag %s."
 		return fmt.Sprintf(tpl, command[1], command[2])
 
 	case "detag":
-		db.DeregisterResource(command[1], command[2])
+		if len(command) == 1 {
+			return "please specify the resource name"
+		} else if len(command) == 2 {
+			return "please specify the tag name"
+		} else if len(command) > 3 {
+			return "too many parameters"
+		}
+		err := db.DeregisterResource(command[1], command[2])
+		if err != nil {
+			return err.Error()
+		}
 		tpl := "Detag resource %s with tag %s."
 		return fmt.Sprintf(tpl, command[1], command[2])
 	
