@@ -29,6 +29,51 @@ type Chat struct {
 	Id int `json:"id"`
 }
 
+const (
+
+	gopherHelp string = `
+Usage:
+    /gopher [subcommand]
+
+Description:
+    User interface of gopher bot.
+
+Commands:
+    - help
+    - res
+    - tag
+	`
+
+	resourceHelp string = `
+Usage:
+    /gopher res [command]
+
+Description:
+    Resources operations of gopher bot
+
+Commands:
+    - help
+    - get NAME
+    - ls [TAG]
+    - new NAME URL
+    - del NAME
+    - tag NAME TAG
+    - detag NAME TAG
+`
+
+	tagHelp string = `
+Usage:
+    /gopher tag [command]
+
+Description:
+    Tags operations of gopher bot
+
+Commands:
+    - help
+    - ls
+`
+)
+
 var (
 
 	bot *tgbotapi.BotAPI
@@ -79,7 +124,7 @@ func PollingBot() {
 		case "tag":
 			text = tagHandler(command[2:])
 		default:
-			text = "help message"
+			text = gopherHelp
 		}
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
@@ -90,8 +135,12 @@ func PollingBot() {
 
 func resourceHandler(command []string) string {
 
+	if len(command) == 0 {
+		return resourceHelp
+	}
+
 	switch command[0] {
-	case "ls", "list":
+	case "ls":
 		var list []db.Resource
 		if len(command) == 1 {
 			list = db.ListResources()
@@ -110,6 +159,9 @@ func resourceHandler(command []string) string {
 			reply = "No resources found."
 		}
 		return reply
+	
+	case "get":
+		return db.GetResource(command[0]).Url
 
 	case "new":
 		db.CreateResource(command[1], command[2])
@@ -132,14 +184,18 @@ func resourceHandler(command []string) string {
 		return fmt.Sprintf(tpl, command[1], command[2])
 	
 	default:
-		return db.GetResource(command[0]).Url
+		return resourceHelp
 	}
 }
 
 func tagHandler(command []string) string {
 
+	if len(command) == 0 {
+		return tagHelp
+	}
+
 	switch command[0] {
-	default:
+	case "ls":
 		var list []db.Team
 		if len(command) == 1 {
 			list = db.ListTeams()
@@ -152,8 +208,11 @@ func tagHandler(command []string) string {
 			reply += i.Name + "\n"
 		}
 		if reply == "" {
-			reply = "No teams found."
+			reply = "No tags found."
 		}
 		return reply
+
+	default:
+		return tagHelp
 	}
 }
